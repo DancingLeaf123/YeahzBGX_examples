@@ -1995,6 +1995,9 @@ public:
 	virtual float get_base_hp( ) = 0;
 	virtual float get_base_mana( ) = 0;
 	virtual float get_stat_for_level( per_level_stat_type stat, std::int32_t level ) = 0;
+	
+	virtual void set_name( const std::string& name ) = 0;
+	virtual void print_chat( std::uint32_t flags, const char* format, ... ) = 0;
 
 	bool is_valid( bool force = false );
 	
@@ -2891,6 +2894,7 @@ enum class events
 	on_reconnect,
 	on_global_event,
 	on_render_mouse_overs,
+	on_unkillable_minion,
 	events_size
 };
 
@@ -2902,6 +2906,7 @@ public:
 
 	virtual void trigger_on_before_attack_orbwalker( game_object_script target, bool* process ) = 0;
 	virtual void trigger_on_after_attack_orbwalker( game_object_script target ) = 0;
+	virtual void trigger_on_unkillable_minion( game_object_script minion ) = 0;
 };
 
 class health_prediction_manager
@@ -3474,6 +3479,14 @@ struct event_handler<events::on_after_attack_orbwalker>
 };
 
 template < >
+struct event_handler<events::on_unkillable_minion>
+{
+	static void add_callback( void( *callback )( game_object_script minion ) ) { plugin_sdk->get_event_handler_manager( )->add_callback( events::on_unkillable_minion, ( void* ) callback ); }
+	static void remove_handler( void( *callback )( game_object_script minion ) ) { plugin_sdk->get_event_handler_manager( )->remove_callback( events::on_unkillable_minion, ( void* ) callback ); }
+	static void invoke( game_object_script minion ) { plugin_sdk->get_event_handler_manager( )->trigger_on_unkillable_minion( minion ); }
+};
+
+template < >
 struct event_handler<events::on_before_attack_orbwalker>
 {
 	static void add_callback( void( *callback )( game_object_script target, bool* process ) ) { plugin_sdk->get_event_handler_manager( )->add_callback( events::on_before_attack_orbwalker, ( void* ) callback ); }
@@ -4034,6 +4047,8 @@ struct evade_skillshot_info
 	int spell_data_danger_level;
 	bool spell_data_is_dangerous;
 	evade_skillshot_type skillshot_type;
+	game_object_script unit;
+	spellslot slot;
 };
 
 class evade_manager
